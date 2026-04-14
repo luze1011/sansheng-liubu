@@ -5,7 +5,7 @@
   "_config_note2": "// 要启用模型配置，请取消上面 _model_example2 的注释符号并修改为你需要的模型名称。",
   
   "name": "sansheng-liubu",
-  "version": "5.0.0",
+  "version": "1.0.0",
   "description": "三省六部任务调度器 - 通用配置",
   
   "trigger_words": {

@@ -28,10 +28,10 @@ description: |
 trigger: 当用户消息包含「使用三省六部」「启动三省六部」「调用三省六部」「三省六部帮我」「用三省六部」等触发词时触发。
 metadata:
   openclaw:
-    emoji: "🏛️"
-    version: "5.0.0"
+    emoji: "\U0001F3DB"
+    version: "1.0.0"
     created: "2026-04-14"
-    author: "Azer阿泽"
+    author: "帝姬"
 ---
 
 # 三省六部通用任务处理器
