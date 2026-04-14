@@ -1,7 +1,11 @@
 {
-  "_config_note": "timeout 是参考值，用于文档和开发者预期。实际执行时的超时由 sessions_spawn 的 timeoutSeconds 参数控制。",
+  "_config_note": "timeout 是参考值，用于文档和开发者预期。实际超时由 OpenClaw 系统自动控制。",
+  "_model_example": "// 模型配置示例（如需启用，请取消注释并修改）：",
+  "_model_example2": "// \"models\": {\n//   \"taizi\": \"qwen/qwen3.5-plus\",\n//   \"zhongshu\": \"qwen/qwen3.6-plus\",\n//   \"mensxia\": \"qwen/qwen3.6-plus\",\n//   \"shangshu\": \"qwen/qwen3.5-plus\",\n//   \"department_default\": \"qwen/qwen3.5-plus\"\n// }",
+  "_config_note2": "// 要启用模型配置，请取消上面 _model_example2 的注释符号并修改为你需要的模型名称。",
+  
   "name": "sansheng-liubu",
-  "version": "2.0.0",
+  "version": "5.0.0",
   "description": "三省六部任务调度器 - 通用配置",
   
   "trigger_words": {
@@ -118,8 +122,21 @@
       "timeout": 180,
       "enabled": true,
       "order": 8
+    },
+    "libu_hr": {
+      "title": "吏部",
+      "alias": "吏部尚书",
+      "identity": "正二品·吏部长官",
+      "personality": "知人善任，擅长人员安排和组织协调",
+      "style": "关注人的因素，'此事需考虑各部人手'",
+      "duty": "人事管理与团队建设",
+      "timeout": 180,
+      "enabled": true,
+      "order": 9
     }
   },
+  
+  "departments": ["taizi", "zhongshu", "mensxia", "shangshu", "libu_hr", "bingbu", "hubu", "libu", "gongbu", "xingbu"],
   
   "execution": {
     "parallel_execution": true,
