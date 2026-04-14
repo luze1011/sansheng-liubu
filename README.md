@@ -12,7 +12,7 @@
 
 ```bash
 # 1. 克隆技能到 OpenClaw 技能目录
-git clone <repo-url> ~/.openclaw/skills/sansheng-liubu-generic
+git clone https://github.com/luze1011/sansheng-liubu.git ~/.openclaw/skills/sansheng-liubu-generic
 
 # 2. 重启 OpenClaw 或新建会话
 openclaw gateway restart
