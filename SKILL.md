@@ -28,7 +28,7 @@ description: |
 trigger: 当用户消息包含「使用三省六部」「启动三省六部」「调用三省六部」「三省六部帮我」「用三省六部」等触发词时触发。
 metadata:
   openclaw:
-    emoji: "\U0001F3DB"
+    emoji: "\\U0001F3DB"
     version: "1.0.0"
     created: "2026-04-14"
     author: "帝姬"
@@ -38,7 +38,7 @@ metadata:
 
 ## 🏛️ 技能概述
 
-这是一个基于古代三省六部制的异步任务调度系统。当用户明确说「使用三省六部」等触发词时，Agent会启动这个技能，在后台异步执行完整的三省六部流程，同时不阻塞聊天窗口。
+这是一个基于古代三省六部制的异步任务调度系统。当用户明确说「使用三省六部」等触发词时，Agent 会启动这个技能，在后台异步执行完整的三省六部流程，同时不阻塞聊天窗口。
 
 ---
 
@@ -58,7 +58,7 @@ metadata:
 用户消息（包含触发词）
     │
     ▼
-Agent立即回复「收到！正在安排三省六部处理...」
+Agent 立即回复「收到！正在安排三省六部处理...」
     │
     ▼
 sessions_yield() 释放聊天窗口 ← 关键！
@@ -97,21 +97,104 @@ sessions_yield() 释放聊天窗口 ← 关键！
         └─ 吏部：八面玲珑
             │
             ▼
-        汇总结果 → 传给Agent
+        汇总结果 → 传给 Agent
             │
             ▼
-Agent接收结果 → 发送新消息回奏
+Agent 接收结果 → 发送新消息回奏
 ```
 
 ### 详细数据流
 
 ```
-用户输入 → Agent检测 → 立即回复 → 释放窗口 →
+用户输入 → Agent 检测 → 立即回复 → 释放窗口 →
 太子分拣结果 → 中书省规划 → 门下省审核 →
   ├─ 审核不通过 → 中书省重新规划
   └─ 审核通过 → 尚书省派发 → 六部并行执行 → 汇总 → 回奏
 ```
+
+---
+
+## 🛠️ 工具使用
+
+### 1. 立即回复 + 释放窗口
+
 ```
+message(action="send", targets=["用户"], message="收到！正在安排三省六部处理，稍后向您汇报结果～")
+sessions_yield()
+```
+
+### 2. 创建异步子任务（按顺序执行）
+
+**太子分拣**：
+```
+sessions_spawn(
+    task="你是太子，负责消息分拣。任务：{用户任务}",
+    timeoutSeconds=60
+)
+```
+
+**中书省规划**（接收太子结果）：
+```
+sessions_spawn(
+    task="你是中书令，负责方案规划。基于太子分拣结果：{result_taizi}，制定详细方案",
+    timeoutSeconds=120
+)
+```
+
+**门下省审核**（接收中书结果）：
+```
+sessions_spawn(
+    task="你是侍中，负责方案审核。审核中书省规划：{result_zhongshu}，如发现问题请提出修改意见，如无问题请确认通过",
+    timeoutSeconds=90
+)
+```
+
+**审核判断标准**：
+- 如果门下省回复中包含"不通过"、"修改"、"有问题"等关键词，则需要重新规划
+- 如果门下省回复中包含"通过"、"没问题"、"可以执行"等关键词，则继续下一步
+
+**尚书省派发**（接收审核通过的方案）：
+```
+sessions_spawn(
+    task="你是尚书令，负责任务派发。根据审核通过的方案：{result_menxia}，分解为具体任务并派发给六部",
+    timeoutSeconds=60
+)
+```
+
+**六部并行执行**（接收尚书派发的任务）：
+```
+departments = ['兵部', '户部', '礼部', '工部', '刑部', '吏部']
+for dept in departments:
+    sessions_spawn(
+        task="你是{dept}，负责{dept}任务。根据尚书省派发的指令：{result_shangshu}，执行具体任务",
+        timeoutSeconds=180
+    )
+```
+
+### 3. 模型指定（可选）
+
+```
+sessions_spawn(
+    task="任务描述",
+    timeoutSeconds=120,
+    model="qwen/qwen3.6-plus"  # 可选参数
+)
+```
+
+### 4. 数据传递与异步处理
+
+**完整流程**：
+1. 立即回复并释放窗口
+2. 串行处理（确保数据传递）
+3. 审核循环（门下审核，不通过则返回中书）
+4. 派发并行执行
+5. 汇总并回奏
+
+**结果汇总方法**：
+- 收集六部的执行结果
+- 提取每个部门的关键输出
+- 格式化为统一的报告格式
+- 发送给用户
 
 ---
 
@@ -162,105 +245,6 @@ Agent接收结果 → 发送新消息回奏
 
 ---
 
-## 🛠️ 工具使用
-
-### 1. 立即回复 + 释放窗口
-```python
-# 立即回复
-await message(action="send", targets=["用户"], message="收到！正在安排三省六部处理，稍后向您汇报结果～")
-
-# 释放聊天窗口
-await sessions_yield()
-```
-
-### 2. 创建异步子任务（按顺序执行）
-```python
-# 太子分拣
-result_taizi = await sessions_spawn(
-    task="你是太子，负责消息分拣。任务：{用户任务}",
-    timeoutSeconds=60
-)
-
-# 中书省规划（接收太子结果）
-result_zhongshu = await sessions_spawn(
-    task=f"你是中书令，负责方案规划。基于太子分拣结果：{result_taizi}，制定详细方案",
-    timeoutSeconds=120
-)
-
-# 门下省审核（接收中书结果）
-result_menxia = await sessions_spawn(
-    task=f"你是侍中，负责方案审核。审核中书省规划：{result_zhongshu}，如发现问题请提出修改意见，如无问题请确认通过",
-    timeoutSeconds=90
-)
-
-# 检查审核结果，如不通过则重新规划
-if "不通过" in result_menxia or "修改" in result_menxia:
-    result_zhongshu = await sessions_spawn(
-        task=f"你是中书令，根据门下省的修改意见：{result_menxia}，重新规划方案",
-        timeoutSeconds=120
-    )
-    # 重新审核
-    result_menxia = await sessions_spawn(
-        task=f"你是侍中，再次审核中书省的新方案：{result_zhongshu}",
-        timeoutSeconds=90
-    )
-
-# 尚书省派发（接收审核通过的方案）
-result_shangshu = await sessions_spawn(
-    task=f"你是尚书令，负责任务派发。根据审核通过的方案：{result_menxia}，分解为具体任务并派发给六部",
-    timeoutSeconds=60
-)
-
-# 六部并行执行（接收尚书派发的任务）
-departments = ['bingbu', 'hubu', 'libu', 'gongbu', 'xingbu', 'libu_hr']
-results_bu = []
-for dept in departments:
-    result = await sessions_spawn(
-        task=f"你是{dept}，负责{dept}任务。根据尚书省派发的指令：{result_shangshu}，执行具体任务",
-        timeoutSeconds=180
-    )
-    results_bu.append(result)
-```
-
-### 3. 模型指定（可选）
-```python
-# 如果配置了模型，则使用指定模型
-await sessions_spawn(
-    task="任务描述",
-    timeoutSeconds=120,
-    model="qwen/qwen3.6-plus"  # 可选参数
-)
-```
-
-### 4. 数据传递与异步处理
-```python
-# 完整的数据传递流程
-async def sansheng_liubu_process(user_input):
-    # 1. 立即回复并释放窗口
-    await message(action="send", targets=["用户"], message="收到！正在安排三省六部处理，稍后向父皇汇报结果～")
-    await sessions_yield()
-    
-    # 2. 串行处理（确保数据传递）
-    taizi_result = await process_taizi(user_input)
-    zhongshu_result = await process_zhongshu(taizi_result)
-    
-    # 3. 审核循环（门下审核，不通过则返回中书）
-    menxia_result = await process_menxia(zhongshu_result)
-    while "不通过" in menxia_result:
-        zhongshu_result = await process_zhongshu_with_feedback(zhongshu_result, menxia_result)
-        menxia_result = await process_menxia(zhongshu_result)
-    
-    # 4. 派发并行执行
-    shangshu_result = await process_shangshu(menxia_result)
-    bu_results = await process_bu_parallel(shangshu_result)
-    
-    # 5. 汇总并回奏
-    final_result = summarize_results(bu_results)
-    await message(action="send", targets=["用户"], message=f"父皇～ 任务已完成！\n{final_result}")
-```
-
----
-
 ## ⚠️ 注意事项
 
 1. **必须使用触发词** - 只有明确说「使用三省六部」才触发
@@ -282,14 +266,14 @@ async def sansheng_liubu_process(user_input):
 ### 测试 2：不触发
 ```
 输入：「帮我查天气」
-预期：不触发，agent正常处理
+预期：不触发，agent 正常处理
 ```
 
 ### 测试 3：异步执行
 ```
 输入：「使用三省六部帮我写报告」
 预期：
-1. agent立即回复「收到！」
+1. agent 立即回复「收到！」
 2. 聊天窗口释放
 3. 用户可以继续聊天
 4. 5 分钟后发送结果
